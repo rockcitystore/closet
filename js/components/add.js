@@ -14,6 +14,7 @@ import {
     // TouchableOpacity,
     // ListView,
     // PickerIOS,
+    DatePickerIOS,
     ScrollView,
 } from 'react-native';
 import {
@@ -54,6 +55,10 @@ const styles = {
     },
     takephoto: {
         color: '#fff'
+    },
+    datePickerIOS: {
+        width: window.width * 0.718,
+
     }
 };
 const ImagePickerOptions = {
@@ -155,10 +160,9 @@ export default class clothingFile extends Component {
     fetchCloth(path) {
         get(path)
             .then((r) => {
-
                 this.setState({
                     price: r.price || null,
-                    photoSource: {rui: r.photoUrl}
+                    photoSource: r.photoUrl || []
                 });
             })
     }
@@ -171,7 +175,7 @@ export default class clothingFile extends Component {
             brands: [],
             types: [],
             malls: [],
-            photoSource: {},
+            photoSource: [],
         };
     }
 
@@ -184,12 +188,29 @@ export default class clothingFile extends Component {
     componentDidMount() {
         console.log('Add componentDidMount');
         RCTDeviceEventEmitter.addListener('photoSource', (o) => {
-            this.setState({photoSource: {uri: o.uri}})
+            let t = this.state.photoSource;
+            //todo 新增图片自动现实
+            t.unshift({source: {uri: o.uri}});
+            this.setState({photoSource: t})
+            console.log(this.state.photoSource);
             upload('server/upload/clothing', o)
                 .then((r) => {
                     console.log('photo uploaded');
                 })
         });
+    }
+
+    showImage() {
+        if (this.state.photoSource.length > 0) {
+            console.log(this.state.photoSource);
+            return <ImageGallery
+                data={this.state.photoSource}
+
+                pageMargin={20}
+            />
+        } else {
+            return <Image></Image>
+        }
     }
 
     onTypesChange(value) {
@@ -213,12 +234,12 @@ export default class clothingFile extends Component {
     }
 
     onDateChange(value) {
-        this.setState({buy_time: value});
+        this.setState({
+            buy_time: value
+        });
     }
 
     render() {
-        console.log(this.state);
-
 
         return (
             <Screen>
@@ -238,16 +259,7 @@ export default class clothingFile extends Component {
                 <ScrollView style={[styles.mt,{paddingBottom:300,backgroundColor:'#666'}]}>
                     <Overlay styleName="solid-bright" style={{height:400,backgroundColor:'#f66'}}
                     >
-                        <ImageGallery
-                            data={[
-              { source: { uri: iul }},
-              { source: { uri: iul }},
-              { source: { uri: iul }},
-              { source: { uri: iul }},
-            ]}
-                            pageMargin={20}
-                        />
-
+                        {this.showImage()}
                         <Button
                             styleName="dark"
                             onPress={takePhoto}
@@ -312,7 +324,8 @@ export default class clothingFile extends Component {
                             <DatePickerIOS
                                 date={this.state.buy_time}
                                 mode="date"
-                                onDateChange={this.onDateChange}
+                                onDateChange={this.onDateChange.bind(this)}
+                                style={styles.datePickerIOS}
                             />
                         </Stage>
                     </View>
